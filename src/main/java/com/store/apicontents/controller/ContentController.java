@@ -22,11 +22,17 @@ public class ContentController {
     }
 
     @GetMapping
-    public ResponseEntity<Page<ContentGetDto>> getAll(@RequestParam(name = "userId", required = false) String userId,
+    public ResponseEntity<Page<ContentGetDto>> getAll(@RequestParam(name = "userId", required = true) String userId,
                                                       @RequestParam(name = "page", defaultValue = "0", required = false) Integer page,
                                                       @RequestParam(name = "size", defaultValue = "10", required = false) Integer pageSize) {
-        Page<ContentGetDto> contentPage = contentService.findPage(PageRequest.of(page, pageSize));
+        Page<ContentGetDto> contentPage = contentService.findPage(PageRequest.of(page, pageSize), userId);
         return new ResponseEntity<Page<ContentGetDto>>(contentPage, HttpStatus.OK);
+    }
+
+    @GetMapping("/{contentId}")
+    public ResponseEntity<ContentGetDto> getById(@PathVariable(name = "contentId") Long contentId) {
+        ContentGetDto content = contentService.findById(contentId);
+        return new ResponseEntity<>(content, HttpStatus.OK);
     }
 
     @PostMapping

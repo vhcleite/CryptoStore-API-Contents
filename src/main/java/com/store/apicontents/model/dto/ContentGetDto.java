@@ -1,6 +1,7 @@
 package com.store.apicontents.model.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.store.apicontents.integration.dto.PaymentStatus;
 import com.store.apicontents.model.ContentStatus;
 import com.sun.istack.NotNull;
 
@@ -22,18 +23,19 @@ public class ContentGetDto {
     @JsonProperty("status")
     private ContentStatus status;
 
-    @JsonProperty("download_allowed")
-    private Boolean isDownloadAllowed = false;
+    @JsonProperty("status_pagamento")
+    private PaymentStatus paymentStatus;
 
     public ContentGetDto() {
     }
 
-    public ContentGetDto(Long id, String name, String description, Double price, ContentStatus status) {
+    public ContentGetDto(Long id, String name, String description, Double price, ContentStatus status, PaymentStatus paymentStatus) {
         this.id = id;
         this.name = name;
         this.description = description;
         this.price = price;
         this.status = status;
+        this.paymentStatus = paymentStatus;
     }
 
     public Long getId() {
@@ -76,11 +78,11 @@ public class ContentGetDto {
         this.status = status;
     }
 
-    public Boolean getDownloadAllowed() {
-        return isDownloadAllowed;
+    public PaymentStatus getPaymentStatus() {
+        return paymentStatus;
     }
 
-    public void setDownloadAllowed(Boolean downloadAllowed) {
-        isDownloadAllowed = downloadAllowed;
+    public void setPaymentStatus(PaymentStatus paymentStatus) {
+        this.paymentStatus = paymentStatus;
     }
 }
