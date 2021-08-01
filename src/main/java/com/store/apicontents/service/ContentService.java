@@ -15,6 +15,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.io.File;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -62,5 +63,19 @@ public class ContentService {
     public ContentGetDto findById(Long contentId) {
         Optional<ContentEntity> contentOptional = contentRepository.findById(contentId);
         return modelMapper.map(contentOptional.orElseThrow(() -> new CryptoStoreException(HttpStatus.NO_CONTENT, "conteúdo inválido")), ContentGetDto.class);
+    }
+
+    public File getFileById(String userId, Long contentId) {
+
+        Optional<ContentEntity> contentOptional = contentRepository.findById(contentId);
+        ContentEntity content = contentOptional.orElseThrow(() -> new CryptoStoreException(HttpStatus.NO_CONTENT, "conteúdo inválido"));
+
+        List<PurchaseDto> purchases = purchaseService.getPurchaseByUser(userId);
+
+        Optional<PurchaseDto> purchaseDtoOptional = purchases.stream().filter(p -> p.getContentId() == content.getId()
+        && p.getPaymentStatus() == PaymentStatus.PAYMENT_MADE).findFirst();
+        purchaseDtoOptional.orElseThrow(() -> new CryptoStoreException(HttpStatus.NO_CONTENT, "Conteúdo não comprado"));
+
+        return new File(content.getPath());
     }
 }

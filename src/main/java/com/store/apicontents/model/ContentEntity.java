@@ -20,7 +20,7 @@ public class ContentEntity {
     }
 
     public ContentEntity(Long id, String name, String description, String path, Double price, ContentStatus status) {
-        id = id;
+        this.id = id;
         this.name = name;
         this.description = description;
         this.path = path;
