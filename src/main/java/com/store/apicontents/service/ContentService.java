@@ -16,6 +16,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -46,8 +47,26 @@ public class ContentService {
     }
 
     private PaymentStatus getPaymentStatus(List<PurchaseDto> purchases, ContentGetDto contentDto) {
-        Optional<PurchaseDto> purchaseDtoOptional = purchases.stream().filter(p -> p.getContentId() == contentDto.getId()).findFirst();
-        return purchaseDtoOptional.isPresent()? purchaseDtoOptional.get().getPaymentStatus() : PaymentStatus.NOT_BOUGHT;
+        Optional<PurchaseDto> purchaseDtoOptional =
+                purchases
+                        .stream()
+                        .filter(p -> p.getContentId() == contentDto.getId())
+                        .sorted((c1, c2) -> c2.getExpirationDateTime().compareTo(c1.getExpirationDateTime()))
+                        .findFirst();
+
+        if(purchaseDtoOptional.isPresent()) {
+            if(purchaseDtoOptional.get().getPaymentStatus().equals(PaymentStatus.PAYMENT_NOT_MADE)
+                    && isExpired(purchaseDtoOptional.get())) {
+                return PaymentStatus.NOT_BOUGHT;
+            }
+
+            return purchaseDtoOptional.get().getPaymentStatus();
+        } else
+            return PaymentStatus.NOT_BOUGHT;
+    }
+
+    private boolean isExpired(PurchaseDto paymentStatus) {
+        return paymentStatus.getExpirationDateTime().isBefore(LocalDateTime.now());
     }
 
     private Boolean isDownloadAllowed(ContentGetDto content, List<PurchaseDto> purchases) {

@@ -2,6 +2,8 @@ package com.store.apicontents.integration.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.time.LocalDateTime;
+
 public class PurchaseDto {
 
     @JsonProperty("id_compra")
@@ -15,6 +17,9 @@ public class PurchaseDto {
 
     @JsonProperty("value")
     private Double value;
+
+    @JsonProperty("data_hora_vencimento_pagamento")
+    private LocalDateTime expirationDateTime;
 
     @JsonProperty("status_pagamento")
     private PaymentStatus paymentStatus;
@@ -68,5 +73,13 @@ public class PurchaseDto {
 
     public void setPaymentStatus(PaymentStatus paymentStatus) {
         this.paymentStatus = paymentStatus;
+    }
+
+    public LocalDateTime getExpirationDateTime() {
+        return expirationDateTime;
+    }
+
+    public void setExpirationDateTime(LocalDateTime expirationDateTime) {
+        this.expirationDateTime = expirationDateTime;
     }
 }
