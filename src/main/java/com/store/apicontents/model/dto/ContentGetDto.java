@@ -3,7 +3,6 @@ package com.store.apicontents.model.dto;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.store.apicontents.integration.dto.PaymentStatus;
 import com.store.apicontents.model.ContentStatus;
-import com.sun.istack.NotNull;
 
 public class ContentGetDto {
 
@@ -23,8 +22,11 @@ public class ContentGetDto {
     @JsonProperty("status")
     private ContentStatus status;
 
-    @JsonProperty("status_pagamento")
+    @JsonProperty("payment_status")
     private PaymentStatus paymentStatus;
+
+    @JsonProperty("pending_payment_message")
+    private String pendingPaymentMessage;
 
     public ContentGetDto() {
     }
@@ -84,5 +86,13 @@ public class ContentGetDto {
 
     public void setPaymentStatus(PaymentStatus paymentStatus) {
         this.paymentStatus = paymentStatus;
+    }
+
+    public String getPendingPaymentMessage() {
+        return pendingPaymentMessage;
+    }
+
+    public void setPendingPaymentMessage(String pendingPaymentMessage) {
+        this.pendingPaymentMessage = pendingPaymentMessage;
     }
 }

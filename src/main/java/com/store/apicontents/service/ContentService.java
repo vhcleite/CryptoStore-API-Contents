@@ -10,6 +10,7 @@ import com.store.apicontents.model.dto.ContentPostDto;
 import com.store.apicontents.repository.ContentRepository;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
@@ -19,14 +20,20 @@ import java.io.File;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
+
+import static com.store.apicontents.integration.dto.PaymentStatus.*;
 
 @Service
 public class ContentService {
 
     private static final ModelMapper modelMapper = new ModelMapper();
-    private ContentRepository contentRepository;
-    private PurchaseService purchaseService;
+
+    private final ContentRepository contentRepository;
+
+    private final PurchaseService purchaseService;
+
+    @Value("${store.account}")
+    private String storeAccount;
 
     @Autowired
     public ContentService(ContentRepository contentRepository, PurchaseService purchaseService) {
@@ -36,42 +43,42 @@ public class ContentService {
 
     public Page<ContentGetDto> findPage(PageRequest pageRequest, String userId) {
         Page<ContentEntity> contentPage = contentRepository.findAll(pageRequest);
-            List<PurchaseDto> purchases = purchaseService.getPurchaseByUser(userId);
+        List<PurchaseDto> purchases = purchaseService.getPurchaseByUser(userId);
         return contentPage.map(c -> mapToContentGetDto(purchases, c));
     }
 
     private ContentGetDto mapToContentGetDto(List<PurchaseDto> purchases, ContentEntity c) {
         ContentGetDto contentDto = modelMapper.map(c, ContentGetDto.class);
-        contentDto.setPaymentStatus(getPaymentStatus(purchases, contentDto));
+
+        Optional<PurchaseDto> purchaseOptional = purchases
+                .stream()
+                .filter(p -> p.getContentId().equals(contentDto.getId()))
+                .min((c1, c2) -> c2.getExpirationDateTime().compareTo(c1.getExpirationDateTime()));
+
+        contentDto.setPaymentStatus(purchaseOptional.isPresent() ? getPaymentStatus(purchaseOptional.get()) : NOT_BOUGHT);
+
+        if (contentDto.getPaymentStatus() == PENDING_PAYMENT && purchaseOptional.isPresent()) {
+            contentDto.setPendingPaymentMessage(
+                    String.format(
+                            "Para realizar o pagamento, informe o identificador %d na transferência para a conta %s",
+                            purchaseOptional.get().getPurchaseId(), storeAccount)
+            );
+        }
+
         return contentDto;
     }
 
-    private PaymentStatus getPaymentStatus(List<PurchaseDto> purchases, ContentGetDto contentDto) {
-        Optional<PurchaseDto> purchaseDtoOptional =
-                purchases
-                        .stream()
-                        .filter(p -> p.getContentId() == contentDto.getId())
-                        .sorted((c1, c2) -> c2.getExpirationDateTime().compareTo(c1.getExpirationDateTime()))
-                        .findFirst();
+    private PaymentStatus getPaymentStatus(PurchaseDto purchaseDto) {
+        if (purchaseDto.getPaymentStatus().equals(PAYMENT_NOT_MADE)
+                && isExpired(purchaseDto)) {
+            return NOT_BOUGHT;
+        }
 
-        if(purchaseDtoOptional.isPresent()) {
-            if(purchaseDtoOptional.get().getPaymentStatus().equals(PaymentStatus.PAYMENT_NOT_MADE)
-                    && isExpired(purchaseDtoOptional.get())) {
-                return PaymentStatus.NOT_BOUGHT;
-            }
-
-            return purchaseDtoOptional.get().getPaymentStatus();
-        } else
-            return PaymentStatus.NOT_BOUGHT;
+        return purchaseDto.getPaymentStatus();
     }
 
     private boolean isExpired(PurchaseDto paymentStatus) {
         return paymentStatus.getExpirationDateTime().isBefore(LocalDateTime.now());
-    }
-
-    private Boolean isDownloadAllowed(ContentGetDto content, List<PurchaseDto> purchases) {
-        Optional<PurchaseDto> purchase = purchases.stream().filter(p -> p.getContentId().equals(content.getId()) && p.getPaymentStatus() == PaymentStatus.PAYMENT_MADE).findFirst();
-        return purchase.isPresent();
     }
 
     public ContentEntity create(ContentPostDto newContent) {
@@ -91,8 +98,8 @@ public class ContentService {
 
         List<PurchaseDto> purchases = purchaseService.getPurchaseByUser(userId);
 
-        Optional<PurchaseDto> purchaseDtoOptional = purchases.stream().filter(p -> p.getContentId() == content.getId()
-        && p.getPaymentStatus() == PaymentStatus.PAYMENT_MADE).findFirst();
+        Optional<PurchaseDto> purchaseDtoOptional = purchases.stream().filter(p -> p.getContentId().equals(content.getId())
+                && p.getPaymentStatus() == PaymentStatus.PAYMENT_MADE).findFirst();
         purchaseDtoOptional.orElseThrow(() -> new CryptoStoreException(HttpStatus.NO_CONTENT, "Conteúdo não comprado"));
 
         return new File(content.getPath());
