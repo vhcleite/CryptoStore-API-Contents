@@ -60,8 +60,8 @@ public class ContentService {
         if (contentDto.getPaymentStatus() == PENDING_PAYMENT && purchaseOptional.isPresent()) {
             contentDto.setPendingPaymentMessage(
                     String.format(
-                            "Para realizar o pagamento, informe o identificador %d na transferência para a conta %s",
-                            purchaseOptional.get().getPurchaseId(), storeAccount)
+                            "Pague %.3f WIZ com o identificador %d na transferência para a conta %s",
+                            purchaseOptional.get().getValue() ,purchaseOptional.get().getPurchaseId(), storeAccount)
             );
         }
 
